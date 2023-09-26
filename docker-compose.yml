@@ -1,0 +1,89 @@
+version: "3.3"
+
+services:
+
+  web:
+    image: nginx:stable-alpine
+    container_name: weldapp_web
+    volumes:
+      - ./source:/var/www/html:delegated
+      - ./docker/nginx/default.dev.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php
+      - mysql
+    ports:
+      - 80:80
+
+  mysql:
+    image: mysql:5.7.29
+    restart: unless-stopped
+    tty: true
+    ports:
+      - 3306:3306
+    volumes:
+      - mysql:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+
+  php:
+    build:
+      context: ./docker/api/.
+    volumes:
+      - ./source:/var/www/html:delegated
+    ports:
+      - 9000:9000
+    environment:
+     - NODE_ENV=development
+     # - NODE_ENV=production
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 1
+      PMA_USER: ${MYSQL_USER}
+      PMA_PASSWORD: ${MYSQL_PASSWORD}
+    restart: always
+    depends_on:
+      - mysql
+    ports:
+    - "8081:80"
+    volumes:
+      - /sessions
+    links:
+      - mysql
+
+  composer:
+    image: composer:latest
+    volumes:
+      - ./source:/var/www/html
+    working_dir: /var/www/html
+    depends_on:
+      - php
+    entrypoint: ["composer", "--ignore-platform-reqs"]
+
+  artisan:
+    build:
+      context: ./docker/api/.
+    volumes:
+      - ./source:/var/www/html:delegated
+    depends_on:
+      - mysql
+    working_dir: /var/www/html
+    entrypoint: ["php", "/var/www/html/artisan"]
+
+  npm:
+    image: node:lts-alpine
+    container_name: npm
+    volumes:
+      - ./source:/var/www/html
+    working_dir: /var/www/html
+    entrypoint: ['npm']
+
+volumes:
+  mysql:

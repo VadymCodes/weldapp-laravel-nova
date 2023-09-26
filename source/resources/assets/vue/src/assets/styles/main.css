@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Cookie consent style */
+@media only screen and (max-width: 600px) {
+  .Cookie--base {
+    padding: 0 1.250em !important;
+  }
+  .Cookie>* {
+  	margin-bottom: 0 !important;
+  }
+  .Cookie__buttons {
+  	margin: 0 !important;
+  }
+}
